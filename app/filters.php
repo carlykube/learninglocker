@@ -16,14 +16,28 @@ use \Locker\Helpers\Helpers as Helpers;
 |
 */
 
-App::before(function($request) {});
+App::before(function($request) {
+  // Enable CORS
+  // In production, replace * with http://yourdomain.com
+  header("Access-Control-Allow-Origin: *");
+  header('Access-Control-Allow-Credentials: true');
+
+  if (Request::getMethod() == "OPTIONS") {
+      // The client-side application can set only headers allowed in Access-Control-Allow-Headers
+      $headers = [
+          'Access-Control-Allow-Methods'=> 'POST, GET, OPTIONS, PUT, DELETE',
+          'Access-Control-Allow-Headers'=> 'X-Requested-With, Content-Type, X-Auth-Token, Origin, Authorization'
+      ];
+      return Response::make('You are connected to the API', 200, $headers);
+  }
+});
 
 App::after(function($request, $response) {
   $response->headers->set('X-Experience-API-Version', '1.0.1');
 
-  if (isset($_SERVER['HTTP_ORIGIN'])) {
-    $response->headers->set('Access-Control-Allow-Origin', $_SERVER['HTTP_ORIGIN']);
-  }
+  // if (isset($_SERVER['HTTP_ORIGIN'])) {
+  //   $response->headers->set('Access-Control-Allow-Origin', $_SERVER['HTTP_ORIGIN']);
+  // }
 });
 
 // Checks for logged in user.
@@ -52,7 +66,7 @@ Route::filter('auth.statement', function($route, $request){
     if ($authorization !== null && strpos($authorization, 'Basic') === 0) {
       $authorization = gettype($authorization) === 'string' ? substr($authorization, 6) : false;
       $auth_validator->checkTypes('auth', $authorization, 'base64', 'headers');
-      
+
       if ($auth_validator->getStatus() === 'failed') {
         throw new Exceptions\Validation($auth_validator->getErrors());
       }
